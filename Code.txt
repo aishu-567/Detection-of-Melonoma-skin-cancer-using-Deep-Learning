@@ -1,0 +1,80 @@
+from google.colab import drive
+drive.mount('/content/drive')
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.optimizers import RMSprop
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+import os
+img = image.load_img("/content/drive/MyDrive/Mini/Train/1/ISIC_0000000.jpg")
+plt.imshow(img)
+cv2.imread("/content/drive/MyDrive/Mini/Train/1/ISIC_0000000.jpg")
+cv2.imread("/content/drive/MyDrive/Mini/Train/1/ISIC_0000000.jpg").shape
+train = ImageDataGenerator(rescale=1/255)
+validation=ImageDataGenerator(rescale=1/255)
+train_dataset = train.flow_from_directory('/content/drive/MyDrive/Mini/Train',
+                                         target_size=(200,200),
+                                         batch_size = 3,
+                                         class_mode='binary')
+validation_dataset = train.flow_from_directory('/content/drive/MyDrive/Mini/Validation',
+                                              target_size=(200,200),
+                                              batch_size = 3,
+                                              class_mode='binary')
+train_dataset.class_indices
+train_dataset.classes
+
+model = tf.keras.models.Sequential([tf.keras.layers.Conv2D(16,(3,3),activation='relu',input_shape=(200,200,3)),
+                                   tf.keras.layers.MaxPool2D(2,2),
+                                   #
+                                   tf.keras.layers.Conv2D(32,(3,3),activation='relu'),
+                                   tf.keras.layers.MaxPool2D(2,2),
+                                   #
+                                   tf.keras.layers.Conv2D(64,(3,3),activation='relu'),
+                                   tf.keras.layers.MaxPool2D(2,2),
+                                   ##
+                                   tf.keras.layers.Flatten(),
+                                   ##
+                                   tf.keras.layers.Dense(512,activation='relu'),
+                                   ##
+                                   tf.keras.layers.Dense(1,activation='sigmoid')
+                                  ])
+model.compile(loss='binary_crossentropy',
+             optimizer=RMSprop(learning_rate=0.001),
+             metrics=['accuracy'])
+model_fit = model.fit(train_dataset,
+                     steps_per_epoch = 7,
+                     epochs=30,
+                     validation_data = validation_dataset)
+plt.plot(model_fit.history['loss'])
+plt.plot(model_fit.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper right')
+plt.show()
+plt.plot(model_fit.history['accuracy'])
+plt.plot(model_fit.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper right')
+plt.show()
+dir_path = '/content/drive/MyDrive/Mini/Test'
+for i in os.listdir(dir_path):
+    print(i)
+dir_path = '/content/drive/MyDrive/Mini/Test'
+for i in os.listdir(dir_path):
+    img = image.load_img(dir_path+'/'+i,target_size=(200,200))
+    plt.imshow(img)
+    plt.show()
+    
+    x=image.img_to_array(img)
+    x=np.expand_dims(x,axis=0)
+    images = np.vstack([x])
+    val = model.predict(images)
+    if val==1:
+        print("SKIN CANCER")
+    else:
+        print("NOT A SKIN CANCER")
